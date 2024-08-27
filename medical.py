@@ -49,6 +49,7 @@ def estimate_charges(ages,bmi,child,smoker_value,w1,w2,w3,w4,b):
     return (w1*ages + w2*bmi + w3*child + w4*smoker_value) + b
 
 
+
 def try_parameters(w1,w2,w3,w4, b):
     ages = non_smoker_df.age
     target = non_smoker_df.charges
