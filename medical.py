@@ -5,68 +5,113 @@ import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
 medical_df = ps.read_csv('data.csv')
-# print(medical_df)
-#gives the statistical data about age group of our medical dataframe
-# print(medical_df.age.describe())   
-
 min_age = 18
 max_age = 64
 
-#creates a histogram between age and charges of the patient
-# fig = px.histogram(data_frame=medical_df,x='age',y='charges',nbins=max_age-min_age)  
-# fig.update_layout(bargap=0.1)
-# fig.show()
-
-#creates a scatterplot between age and charges and the color differentiate tells which one smoke or not
-# fig1 = px.scatter(data_frame=medical_df,x='age',y='charges',color='smoker',hover_data="sex",color_discrete_sequence=['red','green'])
+# creates a histogram of age
+# fig1 = px.histogram(data_frame=medical_df,x='age',marginal='box',nbins=47,color_discrete_sequence=['red'],title="histogram of ages")
+# fig1.update_layout(bargap = 0.1)
 # fig1.show()
 
+#creates a histogram of charges and have a differentiating varaible of the smoker with value yes and no
+# fig2 = px.histogram(medical_df, 
+#                    x='charges', 
+#                    marginal='box', 
+#                    color='smoker', 
+#                    color_discrete_sequence=['green', 'red'], 
+#                    title='Annual Medical Charges')
+# fig2.update_layout(bargap=0.1)
+# fig2.show()
 
+# counts values yes and no
+# medical_df.smoker.value_counts()
 
-#creates a dataframe of the perosn who smokes
-smoker_df = medical_df[medical_df.smoker=="yes"]
-# print(non_smoker_df)
-actual_charges = smoker_df.charges
-# print(actual_charges)
+# histogram of smokers differentiate by gender
+# px.histogram(medical_df, x='smoker', color='sex', title='Smoker')
 
-smoker_age = smoker_df.age
-
-
-def estimate_charges(age,w,b):
-    return (age*w)+b       # a linear equation where w is slope and b is intercept on y-axis
-
-slope_w = 350
-intercept_b = 1000   
-
-
-# target_check function creates a line graph to form a linear relation between age and charges
-def target_check(age,w,b):
-    smoker_charges = estimate_charges(age,w,b)
-    plt.scatter(smoker_age,smoker_df.charges,alpha=0.8,s=8)
-    plt.plot(smoker_age,smoker_charges,'g-')
-
-
-target_check(smoker_age,305.23760211,20294.12812691597)
-
-# print(smoker_charges)
-# fig3 = px.line(data_frame=smoker_df,x='age',y=smoker_charges)
+# scatter graph btw charges and smoker, differentiate by smoker
+# fig3 = px.scatter(medical_df, 
+#                  x='age', 
+#                  y='charges', 
+#                  color='smoker', 
+#                  opacity=0.8, 
+#                  hover_data=['sex','children','bmi'], 
+#                  title='Age vs. Charges')
+# fig3.update_traces(marker_size=5)
 # fig3.show()
 
-#use of sklearn
-inputs = smoker_df[['age']]
-targets = smoker_df.charges
-model = LinearRegression()
-model.fit(inputs,targets)
-print(f"Coefficients: {model.coef_}")  
-print(f"Intercept: {model.intercept_}") 
-
-# again use target_check
-target_check(smoker_age,model.coef_,model.intercept_)
+# gives the relation btw 1 and -1
+# medical_df.charges.corr(medical_df.age)
 
 
+def estimate_charges(ages,bmi,child,smoker_value,w1,w2,w3,w4,b):
+    return (w1*ages + w2*bmi + w3*child + w4*smoker_value) + b
 
+
+def try_parameters(w1,w2,w3,w4, b):
+    ages = non_smoker_df.age
+    target = non_smoker_df.charges
+    bmi = non_smoker_df.bmi
+    child = non_smoker_df.children
+    smoker_value = non_smoker_df['smoker_numeric']
+    predictions = estimate_charges(ages,bmi,child,smoker_value ,w1,w2,w3,w4, b)
+    
+
+    plt.plot(ages, predictions, 'r', alpha=0.9)
+    plt.scatter(ages, target, s=8,alpha=0.8)
+    plt.xlabel('Age')
+    plt.ylabel('Charges')
+    plt.legend(['Prediction', 'Actual'])
+    
+    loss = rmse(target, predictions)
+    print("RMSE Loss: ", loss)
+
+gender_values= {"female":0,"male":1}
+medical_df['gender_numeric'] = medical_df.sex.map(gender_values)
+
+
+smoker_values = {'no': 0, 'yes': 1}
+medical_df['smoker_numeric'] = medical_df.smoker.map(smoker_values)
+
+# print(medical_df.charges.corr(smoker_numeric))
+
+
+# using linear regression for dataframe values for no smoker
+
+non_smoker_df = medical_df[medical_df.smoker == 'no']
+def rmse(targets, predictions):
+    return ny.sqrt(ny.mean(ny.square(targets - predictions)))
+
+# model = LinearRegression()
+# inputs = non_smoker_df[['age','bmi','children','smoker_numeric']]
+targets = non_smoker_df.charges
+# model.fit(inputs,targets)  #after will get coef_ which is an array and intercept_ which is the intercept on y axis
+
+# this gives the charge values of the patient at age 23,37,61 
+# print(model.predict(ny.array([[23], 
+#                         [37], 
+#                         [61]]))) 
+
+# predictions = model.predict(inputs)
+# print(predictions)
+# loss = rmse(targets,predictions)  #it will give the differnece in the real vs predict value of charges
+# print(loss)
+# Create inputs and targets
+inputs, targets = medical_df[['age', 'bmi', 'children', 'smoker_numeric']], medical_df['charges']
+
+# Create and train the model
+model = LinearRegression().fit(inputs, targets)
+
+# Generate predictions
+predictions = model.predict(inputs)
+
+# Compute loss to evalute the model
+loss = rmse(targets, predictions)
+print('Loss:', loss)
+try_parameters(model.coef_[0],model.coef_[1],model.coef_[2],model.coef_[3],model.intercept_)
 
 
 plt.show()
+
+
